@@ -149,6 +149,8 @@ public class Account {
 			return null;
 		}
 	}
+	
+	
 
 	/**
 	 * Returns a list of all your followers, by account name.
@@ -237,6 +239,7 @@ public class Account {
 		return ids;
 	}
 
+	
 	/**
 	 * Obtains all the users you're following.
 	 */
@@ -306,6 +309,53 @@ public class Account {
 					+ te.getMessage());
 			System.exit(-1);
 		}
+	}
+
+	/**
+	 * Returns a list of all the followers of a given account name. (no names, just identifications)
+	 * 
+	 * @param useraccount
+	 */
+	public ArrayList<Long> getFollowersIDbyUser(String useraccount) {
+		try {
+			
+			ArrayList<Long> idUsers = new ArrayList<Long>();
+			long cursor = -1;
+			IDs ids = null;
+			
+			System.out.println("Listing followers's ids.");
+			
+			do {
+				
+				// por cada usuario que le pido
+				if (useraccount != null) {
+					ids = twitter.getFollowersIDs(useraccount, cursor);
+				
+				} else {
+					System.out.println("There is no user defined.");
+					return null;
+				}
+				
+				// me devuelve el ID de seguidor
+				for (long id : ids.getIDs()) {
+					idUsers.add(new Long(id));
+					
+				}
+				
+			} while ((cursor = ids.getNextCursor()) != 0);
+			
+			System.out.println("Total number of IDs elevated: " + idUsers.size());
+			return idUsers;
+			
+		} catch (TwitterException te) {
+			te.printStackTrace();
+			System.out.println("Failed to get followers' ids: "
+					+ te.getMessage());
+			System.exit(-1);
+		}
+		
+		return null;
+		
 	}
 
 }
