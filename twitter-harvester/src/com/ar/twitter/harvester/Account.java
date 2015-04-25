@@ -149,8 +149,6 @@ public class Account {
 			return null;
 		}
 	}
-	
-	
 
 	/**
 	 * Returns a list of all your followers, by account name.
@@ -239,20 +237,18 @@ public class Account {
 		return ids;
 	}
 
-	
 	/**
 	 * Obtains all the users you're following.
 	 */
 	public List<User> getFriendsUsers() {
-		
+
 		ArrayList<User> salida = new ArrayList<User>();
-		
+
 		try {
 
 			long cursor = -1;
 
 			PagableResponseList<User> userlist;
-			
 
 			do {
 				// for the user already connected.
@@ -312,50 +308,64 @@ public class Account {
 	}
 
 	/**
-	 * Returns a list of all the followers of a given account name. (no names, just identifications)
+	 * Returns a list of all the followers of a given account name. (no names,
+	 * just identifications)
 	 * 
 	 * @param useraccount
 	 */
 	public ArrayList<Long> getFollowersIDbyUser(String useraccount) {
 		try {
-			
+
 			ArrayList<Long> idUsers = new ArrayList<Long>();
 			long cursor = -1;
 			IDs ids = null;
-			
+
 			System.out.println("Listing followers's ids.");
-			
+
 			do {
-				
+
 				// por cada usuario que le pido
 				if (useraccount != null) {
 					ids = twitter.getFollowersIDs(useraccount, cursor);
-				
+
 				} else {
 					System.out.println("There is no user defined.");
 					return null;
 				}
-				
+
 				// me devuelve el ID de seguidor
 				for (long id : ids.getIDs()) {
 					idUsers.add(new Long(id));
-					
+
 				}
-				
+
 			} while ((cursor = ids.getNextCursor()) != 0);
-			
-			System.out.println("Total number of IDs elevated: " + idUsers.size());
+
+			System.out.println("Total number of IDs elevated: "
+					+ idUsers.size());
 			return idUsers;
-			
+
 		} catch (TwitterException te) {
 			te.printStackTrace();
 			System.out.println("Failed to get followers' ids: "
 					+ te.getMessage());
 			System.exit(-1);
 		}
-		
+
 		return null;
-		
+
+	}
+
+	/**
+	 * This method follows a new userid.
+	 * 
+	 * @param id
+	 * @throws TwitterException
+	 */
+	public void follow(Long id) throws TwitterException {
+
+		this.twitter.createFriendship(id.longValue());
+
 	}
 
 }

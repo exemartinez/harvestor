@@ -16,42 +16,50 @@
 
 package twitter4j.examples.user;
 
-import twitter4j.*;
+import twitter4j.ResponseList;
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+import twitter4j.TwitterFactory;
+import twitter4j.User;
 
 /**
  * Looks up users.
- *
+ * 
  * @author Yusuke Yamamoto - yusuke at mac.com
  */
 public final class LookupUsers {
-    /**
-     * Usage: java twitter4j.examples.user.LookupUsers [screen name[,screen name..]]
-     *
-     * @param args message
-     */
-    public static void main(String[] args) {
-        if (args.length < 1) {
-            System.out.println(
-                    "Usage: java twitter4j.examples.user.LookupUsers [screen name[,screen name..]]");
-            System.exit(-1);
-        }
-        try {
-            Twitter twitter = new TwitterFactory().getInstance();
-            ResponseList<User> users = twitter.lookupUsers(args[0].split(","));
-            for (User user : users) {
-                if (user.getStatus() != null) {
-                    System.out.println("@" + user.getScreenName() + " - " + user.getStatus().getText());
-                } else {
-                    // the user is protected
-                    System.out.println("@" + user.getScreenName());
-                }
-            }
-            System.out.println("Successfully looked up users [" + args[0] + "].");
-            System.exit(0);
-        } catch (TwitterException te) {
-            te.printStackTrace();
-            System.out.println("Failed to lookup users: " + te.getMessage());
-            System.exit(-1);
-        }
-    }
+	/**
+	 * Usage: java twitter4j.examples.user.LookupUsers [screen name[,screen
+	 * name..]]
+	 * 
+	 * @param args
+	 *            message
+	 */
+	public static void main(String[] args) {
+		if (args.length < 1) {
+			System.out
+					.println("Usage: java twitter4j.examples.user.LookupUsers [screen name[,screen name..]]");
+			System.exit(-1);
+		}
+		try {
+			Twitter twitter = new TwitterFactory().getInstance();
+			ResponseList<User> users = twitter.lookupUsers(args[0].split(","));
+			for (User user : users) {
+				if (user.getStatus() != null) {
+					System.out.println("@" + user.getScreenName() + " - "
+							+ user.getStatus().getText());
+				} else {
+					// the user is protected
+					System.out.println("@" + user.getScreenName());
+				}
+			}
+			System.out.println("Successfully looked up users [" + args[0]
+					+ "].");
+			System.exit(0);
+		} catch (TwitterException te) {
+			te.printStackTrace();
+			System.out.println("Failed to lookup users: " + te.getMessage());
+			System.exit(-1);
+		}
+	}
 }
