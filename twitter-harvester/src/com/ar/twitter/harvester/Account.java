@@ -3,6 +3,7 @@ package com.ar.twitter.harvester;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import twitter4j.AccountSettings;
 import twitter4j.IDs;
@@ -30,6 +31,7 @@ import twitter4j.User;
 public class Account {
 
 	private Twitter twitter = null;
+	private ArrayList<RateLimitStatus> ratelimit = null;
 
 	public Account() {
 		this.twitter = new TwitterFactory().getInstance();
@@ -56,7 +58,33 @@ public class Account {
 	/**
 	 * Gets rate limit status.
 	 */
-	public void getRateLimitStatus() {
+	public ArrayList<RateLimitStatus> getRateLimitStatus() {
+		try {
+			
+			ArrayList <RateLimitStatus> ratelimitstatusarray=  new ArrayList<RateLimitStatus>();
+			
+			Map<String, RateLimitStatus> rateLimitStatus = twitter
+					.getRateLimitStatus();
+			for (String endpoint : rateLimitStatus.keySet()) {
+				RateLimitStatus status = rateLimitStatus.get(endpoint);
+				ratelimitstatusarray.add(status);
+
+			}
+
+			return ratelimitstatusarray;
+			
+		} catch (TwitterException te) {
+			te.printStackTrace();
+			System.out.println("Failed to get rate limit status: "
+					+ te.getMessage());
+			return null;
+			
+		}
+	}
+	/**
+	 * Prints rate limit status.
+	 */
+	public void traceRateLimitStatus() {
 		try {
 			// Twitter twitter = new TwitterFactory().getInstance();
 			Map<String, RateLimitStatus> rateLimitStatus = twitter
@@ -210,6 +238,7 @@ public class Account {
 		return ids;
 	}
 
+	
 	/**
 	 * Connected user, friends IDs.
 	 * 
@@ -237,6 +266,70 @@ public class Account {
 		return ids;
 	}
 
+	/**
+	 * Connected user, followers IDs.
+	 * 
+	 * @return
+	 */
+	public ArrayList<Long> getFollowersID() {
+
+		List<User> listusers = this.getFollowersUsers();
+		ArrayList<Long> listidusers = new ArrayList<Long>();
+		
+		// just build up an array of longs with the full size of IDs.
+		for (User usr : listusers) {
+			listidusers.add(usr.getId());
+		}
+
+		return listidusers;
+	}
+	
+	/**
+	 * Obtains all the users that follow you.
+	 */
+	public List<User> getFollowersUsers() {
+
+		ArrayList<User> salida = new ArrayList<User>();
+
+		try {
+
+			long cursor = -1;
+
+			PagableResponseList<User> userlist;
+
+			do {
+				// for the user already connected.
+				userlist = twitter.getFollowersList(twitter.getScreenName(),
+						cursor);
+
+				// destroys the pagination
+				for (User usr : userlist) {
+					salida.add(usr);
+				}
+
+				//check ratelimitstatus
+				this.ratelimit = this.getRateLimitStatus();
+				if (ratelimit.get(0).getRemaining() <= 1) TimeUnit.SECONDS.sleep(ratelimit.get(0).getSecondsUntilReset());
+				
+				// iterates page by page
+			} while ((cursor = userlist.getNextCursor()) != 0);
+
+			return salida;
+
+		} catch (TwitterException te) {
+			te.printStackTrace();
+			System.out.println("Failed to get followers' ids: "
+					+ te.getMessage());
+			return salida;
+		} catch (InterruptedException e) {
+			System.out.println("Failed to set timer for rate reset wait: "
+					+ e.getMessage());
+			e.printStackTrace();
+			return salida;
+		}
+	}
+
+	
 	/**
 	 * Obtains all the users you're following.
 	 */

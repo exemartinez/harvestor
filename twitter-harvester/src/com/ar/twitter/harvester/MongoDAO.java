@@ -26,12 +26,19 @@ public class MongoDAO {
 
 	}
 
+	/**
+	 * Inserting many documents at once (trying them as one transaction)
+	 * 
+	 * @param collectionName
+	 * @param documents
+	 */
 	public void insertDocuments(String collectionName, ArrayList<Document> documents) {
 		MongoCollection<Document> collection = getCollection(collectionName);
 
 		// Insert many documents in a given collection
 		collection.insertMany(documents);
 	}
+	
 
 	/**
 	 * Gets a Mongo collection for further processing. (or simple querying)
@@ -40,10 +47,31 @@ public class MongoDAO {
 	 */
 	public MongoCollection<Document> getCollection(String collectionName) {
 		// Getting a new collection
-		MongoCollection<Document> collection = database.getCollection("mycoll");
+		MongoCollection<Document> collection = database.getCollection(collectionName);
+		
+		if (collection == null) {
+			database.createCollection(collectionName);
+			collection = database.getCollection(collectionName);
+		}
+		
 		return collection;
 	}
 
+	/**
+	 * Creates a new log of user followers for a given user of any sort.
+	 * 
+	 * @param userid
+	 * @param username
+	 * @param description
+	 */
+	public Document createAlreadyFollowedUserForMainUser(String mainuser, Long userid,
+			String username, String description) {
+		// create the document
+		return (new Document("twitter_main_user", mainuser).append("twitter_id", userid).append("twitter_username",
+				username).append("twitter_description", description));
+
+	}
+	
 	/**
 	 * Creates a document of the collection AlreadyFollowedUsers
 	 * 
