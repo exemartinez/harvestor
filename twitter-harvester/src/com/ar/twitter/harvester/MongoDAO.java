@@ -7,6 +7,7 @@ import org.bson.Document;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 
 public class MongoDAO {
@@ -93,6 +94,26 @@ public class MongoDAO {
 	public void closeConnections() {
 		// Closing the connection
 		mongoClient.close();
+	}
+	
+	/**
+	 * Transforms a MongoDB cursor into a common ArrayList<Document> class
+	 * 
+	 * @param previouslystored
+	 * @return
+	 */
+	public ArrayList<Document> transformsMongoCursorToArrayList(MongoCursor<Document> previouslystored) {
+		ArrayList<Document> arrayfollowers = new ArrayList<Document>();
+		
+		try {
+		    while (previouslystored.hasNext()) {
+		    	arrayfollowers.add(previouslystored.next());
+		    }
+		} finally {
+			previouslystored.close();
+		}
+		
+		return arrayfollowers;
 	}
 
 }

@@ -30,6 +30,7 @@ import twitter4j.User;
  */
 public class Account {
 
+	private static final int MINIMUM_ALLOWABLE_RATELIMIT_4_OPERATION = 5;
 	private Twitter twitter = null;
 	private ArrayList<RateLimitStatus> ratelimit = null;
 
@@ -56,31 +57,82 @@ public class Account {
 	}
 
 	/**
-	 * Gets rate limit status.
+	 * Gets rate limit status remaining
 	 */
-	public ArrayList<RateLimitStatus> getRateLimitStatus() {
+	public Integer getRateLimitStatusSecondsToReset(String endpoint) {
+
+		String family = endpoint.split("/", 3)[1];
+		RateLimitStatus status;
 		try {
-			
-			ArrayList <RateLimitStatus> ratelimitstatusarray=  new ArrayList<RateLimitStatus>();
-			
-			Map<String, RateLimitStatus> rateLimitStatus = twitter
-					.getRateLimitStatus();
-			for (String endpoint : rateLimitStatus.keySet()) {
-				RateLimitStatus status = rateLimitStatus.get(endpoint);
-				ratelimitstatusarray.add(status);
+			status = twitter.getRateLimitStatus(family).get(
+					endpoint);
+			return new Integer(status.getResetTimeInSeconds());
+		} catch (TwitterException e) {
 
-			}
-
-			return ratelimitstatusarray;
-			
-		} catch (TwitterException te) {
-			te.printStackTrace();
-			System.out.println("Failed to get rate limit status: "
-					+ te.getMessage());
+			e.printStackTrace();
 			return null;
-			
 		}
 	}
+
+	/**
+	 * Gets rate limit status remaining
+	 * NOTA: OJO, el limite para pedir el Rate Limit Status es de 180; esto es hasta antes de que te quedes sin poder pedir el estado.
+	 */
+	public Integer getRateLimitStatus(String endpoint) {
+		String family = endpoint.split("/", 3)[1];
+		RateLimitStatus status;
+		try {
+			status = twitter.getRateLimitStatus(family).get(endpoint);
+			System.out.println(" ---- RATE LIMIT STATUS ----- TRACE ----");
+			//traceRateLimitStatus(); 
+			return new Integer(status.getRemaining());
+		} catch (TwitterException e) {
+			
+			//traceRateLimitStatus(); 
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	/**
+	 * Manages when and how to stop the processing of any program executing Twitter API requests.
+	 * @param string
+	 */
+	public void manageExceededRateLimit(String endpoint) {
+		String family = endpoint.split("/", 3)[1];
+		RateLimitStatus essential_status;
+		RateLimitStatus action_status;
+		
+		try {
+			
+			essential_status = twitter.getRateLimitStatus("application").get("/application/rate_limit_status");
+			action_status = twitter.getRateLimitStatus(family).get(endpoint);
+			
+			//if the current rate being used, or the rate limit are dangerously low...we put the process to sleep.			
+			try {
+				
+				if ((essential_status.getRemaining() <= MINIMUM_ALLOWABLE_RATELIMIT_4_OPERATION) || (action_status.getRemaining() <= MINIMUM_ALLOWABLE_RATELIMIT_4_OPERATION)) {
+					int timespan = (essential_status.getSecondsUntilReset() > action_status.getSecondsUntilReset()) ? essential_status.getSecondsUntilReset() : action_status.getSecondsUntilReset();
+					
+					System.out.println(" ---- STOPPING PROCESS DUE TO RATE LIMIT BY " + timespan + MINIMUM_ALLOWABLE_RATELIMIT_4_OPERATION+ " seconds ----");
+					TimeUnit.SECONDS.sleep(timespan + MINIMUM_ALLOWABLE_RATELIMIT_4_OPERATION); 
+				}
+				 
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}	
+			
+			//traceRateLimitStatus(); 
+			
+		} catch (TwitterException e) {
+			
+			//traceRateLimitStatus(); 
+			e.printStackTrace();
+			
+		}
+		
+	}
+	
 	/**
 	 * Prints rate limit status.
 	 */
@@ -92,14 +144,14 @@ public class Account {
 			for (String endpoint : rateLimitStatus.keySet()) {
 				RateLimitStatus status = rateLimitStatus.get(endpoint);
 				System.out.println("Endpoint: " + endpoint);
-				System.out.println(" Limit: " + status.getLimit());
-				System.out.println(" Remaining: " + status.getRemaining());
-				System.out.println(" ResetTimeInSeconds: "
+				System.out.println(" -> Limit: " + status.getLimit());
+				System.out.println(" -> Remaining: " + status.getRemaining());
+				System.out.println(" -> ResetTimeInSeconds: "
 						+ status.getResetTimeInSeconds());
-				System.out.println(" SecondsUntilReset: "
+				System.out.println(" -> SecondsUntilReset: "
 						+ status.getSecondsUntilReset());
 			}
-			System.exit(0);
+			
 		} catch (TwitterException te) {
 			te.printStackTrace();
 			System.out.println("Failed to get rate limit status: "
@@ -238,7 +290,6 @@ public class Account {
 		return ids;
 	}
 
-	
 	/**
 	 * Connected user, friends IDs.
 	 * 
@@ -275,7 +326,7 @@ public class Account {
 
 		List<User> listusers = this.getFollowersUsers();
 		ArrayList<Long> listidusers = new ArrayList<Long>();
-		
+
 		// just build up an array of longs with the full size of IDs.
 		for (User usr : listusers) {
 			listidusers.add(usr.getId());
@@ -283,7 +334,7 @@ public class Account {
 
 		return listidusers;
 	}
-	
+
 	/**
 	 * Obtains all the users that follow you.
 	 */
@@ -307,10 +358,13 @@ public class Account {
 					salida.add(usr);
 				}
 
-				//check ratelimitstatus
-				this.ratelimit = this.getRateLimitStatus();
-				if (ratelimit.get(0).getRemaining() <= 1) TimeUnit.SECONDS.sleep(ratelimit.get(0).getSecondsUntilReset());
-				
+				// check ratelimitstatus and set timer.
+				if (getRateLimitStatus("/followers/list").intValue() <= 1){
+					//TODO: guarda aca, porque falta completar los parametros de endpoint.
+					TimeUnit.SECONDS.sleep(getRateLimitStatusSecondsToReset("/followers/list"));
+				}
+					
+
 				// iterates page by page
 			} while ((cursor = userlist.getNextCursor()) != 0);
 
@@ -329,7 +383,6 @@ public class Account {
 		}
 	}
 
-	
 	/**
 	 * Obtains all the users you're following.
 	 */
@@ -460,5 +513,28 @@ public class Account {
 		this.twitter.createFriendship(id.longValue());
 
 	}
+
+	/**
+	 * Returns user data from the given id
+	 * 
+	 * @param id
+	 * @return
+	 */
+	public User getUserData(Long id) {
+		User usuario = null;
+
+		try {
+			usuario = this.twitter.showUser(id.longValue());
+
+		} catch (TwitterException e) {
+
+			e.printStackTrace();
+		}
+
+		return usuario;
+	}
+
+
+
 
 }
