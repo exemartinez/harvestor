@@ -5,13 +5,15 @@ import static com.mongodb.client.model.Filters.eq;
 import java.util.ArrayList;
 
 import org.bson.Document;
-
-import twitter4j.TwitterException;
+import org.jongo.Jongo;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+
 
 /**
  * <font color="#000000">Main class for the harvester of followers in twitter.
@@ -51,6 +53,9 @@ public class Hasvestor {
 		
 		//TODO: Realizar el seguimiento sistematico y controlado de todos los seguidores del usuario objetivo.
 		
+		//updateUsersThatAlreadyFollowsBack(MAINUSER); //uncomment this, before you start a session of new bulk followings.
+
+		
 		//1st. Get ALL the users of your target user to follow that doesn't has a flag of like: "do not follow this".
 		
 		//Variables and accounts
@@ -67,17 +72,14 @@ public class Hasvestor {
 		mongodao.connect(DATABASENAME);
 		MongoCollection<Document> usuarioseguido = mongodao.getCollection(COL_USUARIOS_SEGUIDORES_USUARIO);
 		
-		BasicDBObject query = new BasicDBObject("Twitter_Dont_Follow_This", new BasicDBObject("$ne", true));
+		BasicDBObject query = new BasicDBObject("twitter_dont_follow_this", new BasicDBObject("$ne", true)).append("twitter_main_user", new BasicDBObject("$eq", USUARIOACOPIAR));
 		
-		FindIterable<Document> usuariospotencialesseguidores = usuarioseguido.find(query);
-		
-		
-		//2nd. compare the selected users with the current account followers, mark the target user followers that appear there with a flag of "do not follow this"
+		FindIterable<Document> seguidorespotenciales = usuarioseguido.find(query);
 		
 		//3rd. Get the N users from the target user account that do not have a flag of "do not follow this"; N is the maximum expected number of following by day for your account according to Twitter policies.
 		//4th. Follow the N subset users with a random time between every follow 
 		//5th. Set those users (after succesfull following) as "do not follow this" in the target user.
-		//6th. Update a collection of "Recently_followed_users" where the succesfully followed users are logged (this is for further management of the followed back that didn't work.
+		//6th. Update a field of "Recently_followed_users" where the succesfully followed users are logged (this is for further management of the followed back that didn't work).
 		
 		mongodao.closeConnections();
 		
@@ -131,6 +133,29 @@ public class Hasvestor {
 		
 		*/
 	}
+
+
+	/**
+	 * Allows you, to update the others users in the database as followers of the current user, comparing his actual followers with the followers of the other users: if they are the same, they are flagged for not following them back by accident.
+	 * @param mainuser
+	 */
+	private static void updateUsersThatAlreadyFollowsBack(String mainuser) {
+		//1st. Get all the followers of the current user. 
+		JongoDAO jongoDao = new JongoDAO();
+		
+		jongoDao.openConnection();
+		
+		org.jongo.MongoCursor<Document> seguidores =  jongoDao.getUserFollowers(mainuser);
+		
+		//2nd. update all users in the collection that has the same "twitter_id" with the "do not follow this" to true.
+		for(Document seguidor: seguidores){
+			jongoDao.updateFollowerStatus(USUARIOACOPIAR, seguidor, true);
+		}
+		
+		jongoDao.closeConnections();
+	}
+
+
 
 	/**
 	 * Gets the users data from the database, then gets all the users that has no data from twitter and sets the data for them.
