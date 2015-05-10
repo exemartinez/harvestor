@@ -508,9 +508,9 @@ public class Account {
 	 * @param id
 	 * @throws TwitterException
 	 */
-	public void follow(Long id) throws TwitterException {
+	public User follow(Long id) throws TwitterException {
 
-		this.twitter.createFriendship(id.longValue());
+		return twitter.createFriendship(id.longValue());
 
 	}
 

@@ -3,14 +3,14 @@ package com.ar.twitter.harvester;
 import static com.mongodb.client.model.Filters.eq;
 
 import java.util.ArrayList;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import org.bson.Document;
-import org.jongo.Jongo;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.MongoClient;
-import com.mongodb.client.FindIterable;
+import twitter4j.TwitterException;
+import twitter4j.User;
+
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 
@@ -33,6 +33,7 @@ public class Hasvestor {
 	private static final String MAINUSER = "hernanemartinez";
 	private static final String USERNAME = "";
 	private static final String DESCRIPTION = "";
+	private static final long MAX_NUMBER_OF_USERS_FOLLOWED = 250;
 	public FollowersHandler m_FollowersHandler;
 	public Account m_Account;
 
@@ -49,13 +50,13 @@ public class Hasvestor {
 		//1st step: harvest the data from twitter API.
 		//********************************************
 		//updateUserFollowersFromTwitter(USUARIOACOPIAR); //uncomment this method for obtaining a refresh over the users data.
-		//updateUserFollowerInformationInDatabase(MAINUSER); <--TODO: aun resta probar que funcione el update en la base de datos; lo dejamos para el final porque lo importante es tener los IDs y no la info de los usuarios en si mismos.
+		//updateUserFollowerInformationInDatabase(MAINUSER); //<--//TODO: aun resta probar que funcione el update en la base de datos; lo dejamos para el final porque lo importante es tener los IDs y no la info de los usuarios en si mismos.
 		
-		//TODO: Realizar el seguimiento sistematico y controlado de todos los seguidores del usuario objetivo.
+
 		
 		//updateUsersThatAlreadyFollowsBack(MAINUSER); //uncomment this, before you start a session of new bulk followings.
 
-		
+		//TODO: Realizar el seguimiento sistematico y controlado de todos los seguidores del usuario objetivo.
 		//1st. Get ALL the users of your target user to follow that doesn't has a flag of like: "do not follow this".
 		
 		//Variables and accounts
@@ -65,73 +66,63 @@ public class Hasvestor {
 
 		// obtaining all users that follows the common user passed as argument.
 		
-		System.out.println("Followers that follow the main account from the Database.");
+		System.out.println("Start the sistematic following.");
 		
 		// here we query the followers for the given user in the database.
-		MongoDAO mongodao = new MongoDAO();
-		mongodao.connect(DATABASENAME);
-		MongoCollection<Document> usuarioseguido = mongodao.getCollection(COL_USUARIOS_SEGUIDORES_USUARIO);
-		
-		BasicDBObject query = new BasicDBObject("twitter_dont_follow_this", new BasicDBObject("$ne", true)).append("twitter_main_user", new BasicDBObject("$eq", USUARIOACOPIAR));
-		
-		FindIterable<Document> seguidorespotenciales = usuarioseguido.find(query);
+		JongoDAO jongoDAO = new JongoDAO();
+		jongoDAO.openConnection();
+	    Random randomGenerator = new Random();
+	    long followerUsers = 0;
+	    
+		org.jongo.MongoCursor<Document> followersCandidates = jongoDAO.getFollowersCandidates(USUARIOACOPIAR);
 		
 		//3rd. Get the N users from the target user account that do not have a flag of "do not follow this"; N is the maximum expected number of following by day for your account according to Twitter policies.
-		//4th. Follow the N subset users with a random time between every follow 
-		//5th. Set those users (after succesfull following) as "do not follow this" in the target user.
-		//6th. Update a field of "Recently_followed_users" where the succesfully followed users are logged (this is for further management of the followed back that didn't work).
+		Document userCandidate = null;
 		
-		mongodao.closeConnections();
+		User datosFollower = null;
 		
-		//TODO: Realizar el "unfollow" sistematico y controlado de todos los seguidos que no nos devolvieron el seguimiento.
-		
-		
-		
-				
-		/*
-		//*************************************************
-		//2nd step: query the data and start the following.
-		//*************************************************
-		
-		// Now we compare, how much of them already follows us.
-		for (Long idpossible : possiblefollowersaccounts) {
-			for (Long idfollowers : currentfollowersaccounts) {
-				if (idpossible.longValue() != idfollowers.longValue()) {
-					idcandidates.add(idpossible.longValue());
-				}
-
-			}
-		}
-
-		// here we update the followers for the given user in the database.
-		MongoDAO mongodao = new MongoDAO();
-		mongodao.connect(DATABASENAME);
-		MongoCollection<Document> usuarioseguido = mongodao.getCollection("Usuarios_Seguidos_Usuario_Principal");
-		ArrayList<Document> userstofollow = new ArrayList<Document>();
-		Document record;
-		
-		System.out.println("Followers saved to account.");
-		// we start to follow new candidates
-		for (Long id : idcandidates) {
+		while((followersCandidates.hasNext()) && (followerUsers <= MAX_NUMBER_OF_USERS_FOLLOWED)){
+			
+			userCandidate =  followersCandidates.next();
 			try {
-				cuenta.follow(id);
 				
-				record = mongodao.createAlreadyFollowedUserForMainUser(MAINUSER,id, USERNAME, DESCRIPTION); //TODO cambiar las constantes por los valores reales.
-				userstofollow.add(record);
+				//4th. Follow the N subset users with a random time between every follow 	
+				try{				
+					datosFollower = cuenta.follow(userCandidate.getLong("twitter_id"));
+				} catch (Exception e){
+					datosFollower = cuenta.follow(new Long(userCandidate.getDouble("twitter_id").longValue()));
+				}
+				
+				followerUsers++;
+				
+				//5th. Set those users (after succesfull following) as "do not follow this" in the target user.
+				if (datosFollower!=null){
+					//6th. Update a field of "Recently_followed_users" where the succesfully followed users are logged (this is for further management of the followed back that didn't work).
+					jongoDAO.updateSpecificUserDataWithUser(datosFollower);
+				}else{
+					System.out.println("Can't follow the user: " + userCandidate.getLong("twitter_id").longValue());
+				}
+				
+				//We set a Random wait in order to disguise the twitter policies.
+				TimeUnit.SECONDS.sleep(randomGenerator.nextInt(5));
 				
 			} catch (TwitterException e) {
-
+				System.out.println("Error following the user: " + userCandidate.getLong("twitter_id").longValue());
 				e.printStackTrace();
-				mongodao.closeConnections();
-				break;
+			} catch (InterruptedException e) {
+				System.out.println("Error following the user: (from Java Random number generator) " + userCandidate.getLong("twitter_id").longValue());
+				e.printStackTrace();
+			} catch (Exception e){
+				System.out.println("Error following the user: (from Java) " + userCandidate.getLong("twitter_id").longValue());
+				e.printStackTrace();
 			}
+			
 		}
+	
+		jongoDAO.closeConnections();
 		
-		//impacting the database and closing the connection
-		mongodao.insertDocuments("Usuarios_Seguidos_Usuario_Principal", userstofollow);
-		mongodao.closeConnections();
-		
-		*/
+		//TODO: Realizar el "unfollow" sistematico y controlado de todos los seguidos que no nos devolvieron el seguimiento.	
+
 	}
 
 

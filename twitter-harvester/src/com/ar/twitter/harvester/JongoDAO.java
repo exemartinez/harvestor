@@ -1,9 +1,15 @@
 package com.ar.twitter.harvester;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
 import org.bson.Document;
 import org.jongo.Jongo;
 import org.jongo.MongoCollection;
 import org.jongo.MongoCursor;
+
+import twitter4j.User;
 
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
@@ -36,7 +42,7 @@ public class JongoDAO {
 		Jongo jongo = new Jongo(dataBase);
 		MongoCollection usuariosseguidores = jongo.getCollection(COL_USUARIOS_SEGUIDORES_USUARIO);
 
-		MongoCursor<Document> usuarios = usuariosseguidores.find("{twitter_main_user: '" + mainuser + "'}, {twitter_id: 1 , _id:0 }").as(Document.class);
+		MongoCursor<Document> usuarios = usuariosseguidores.find("{twitter_main_user: \"" + mainuser + "\"}, {twitter_id: 1 , _id:0 }").as(Document.class);
 		
 		return usuarios;
 	}
@@ -76,6 +82,37 @@ public class JongoDAO {
 		dataBase = null;
 		mongoClient.close();
 		mongoClient = null;
+		
+	}
+
+	/**
+	 * Gets the candidates for the user passed as paramenter. The idea is to return all the followers with the flag = "twitter_dont_follow_this" in FALSE
+	 * @param usuarioacopiar
+	 * @return
+	 */
+	public MongoCursor<Document> getFollowersCandidates(String mainuser) {
+		
+		Jongo jongo = new Jongo(dataBase);
+		MongoCollection usuariosseguidores = jongo.getCollection(COL_USUARIOS_SEGUIDORES_USUARIO);
+
+		MongoCursor<Document> usuarios = usuariosseguidores.find("{twitter_main_user: \"" + mainuser + "\", twitter_dont_follow_this: false}").as(Document.class);
+		
+		return usuarios;
+	}
+
+	/**
+	 * Updates the data of an specific user in the database.
+	 * @param datosFollower
+	 */
+	public void updateSpecificUserDataWithUser(User datosFollower) {
+		
+		Jongo jongo = new Jongo(dataBase);
+		MongoCollection usuariosseguidores = jongo.getCollection(COL_USUARIOS_SEGUIDORES_USUARIO);
+		
+		DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+		Calendar cal = Calendar.getInstance();
+		
+		usuariosseguidores.update("{twitter_id: " + datosFollower.getId() + "}").multi().with("{$set: {twitter_dont_follow_this: true, twitter_username: \"" + datosFollower.getName() + "\", twitter_description: \"" + datosFollower.getDescription() + "\", twitter_screenname: \"" + datosFollower.getScreenName() + "\", twitter_location: \"" + datosFollower.getLocation() + "\", twitter_followers_count: " + datosFollower.getFollowersCount() + ", twitter_friends_count: " + datosFollower.getFriendsCount() + ", twitter_favs_count: " + datosFollower.getFavouritesCount() + ", twitter_status_count: " + datosFollower.getStatusesCount() + ", Recently_followed_users: " + dateFormat.format(cal.getTime()) + " }}");
 		
 	}
 }
