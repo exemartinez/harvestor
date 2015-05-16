@@ -212,8 +212,7 @@ public class Account {
 					// copies the ID to an array of long
 					aux = new long[salida.length + ids.getIDs().length];
 
-					System.arraycopy(ids.getIDs(), 0, aux, 0,
-							ids.getIDs().length);
+					System.arraycopy(ids.getIDs(), 0, aux, 0,ids.getIDs().length);
 					System.arraycopy(aux, 0, salida, salida.length, aux.length);
 
 				} while ((cursor = ids.getNextCursor()) != 0);
@@ -532,6 +531,22 @@ public class Account {
 		}
 
 		return usuario;
+	}
+	
+	/**
+	 * Unfollows a user, for the connected user.
+	 * @param userId
+	 * @return
+	 */
+	public User unfollow(Long userId) {
+
+		try {
+			return twitter.destroyFriendship(userId);
+		} catch (TwitterException e) {
+			e.printStackTrace();
+			return null;
+		}
+		
 	}
 
 

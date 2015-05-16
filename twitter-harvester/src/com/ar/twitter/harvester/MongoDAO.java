@@ -33,11 +33,16 @@ public class MongoDAO {
 	 * @param collectionName
 	 * @param documents
 	 */
-	public void insertDocuments(String collectionName, ArrayList<Document> documents) {
+	public boolean insertDocuments(String collectionName, ArrayList<Document> documents) {
 		MongoCollection<Document> collection = getCollection(collectionName);
 
 		// Insert many documents in a given collection
-		collection.insertMany(documents);
+		if (documents.size()>0){
+			collection.insertMany(documents);
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 

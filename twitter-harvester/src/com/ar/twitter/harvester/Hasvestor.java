@@ -24,6 +24,7 @@ import com.mongodb.client.MongoCursor;
  * @updated 02-may-2013 10:49:20 p.m.
  */
 public class Hasvestor {
+	private static final int DELAY_FOR_TWITTER_API = 5;
 	private static final String COL_FIELD_TWITTER_DESCRIPTION = "twitter_description";
 	private static final String COL_FIELD_TWITTER_USERNAME = "twitter_username";
 	private static final String COL_FIELD_TWITTER_ID = "twitter_id";
@@ -33,7 +34,8 @@ public class Hasvestor {
 	private static final String MAINUSER = "hernanemartinez";
 	private static final String USERNAME = "";
 	private static final String DESCRIPTION = "";
-	private static final long MAX_NUMBER_OF_USERS_FOLLOWED = 250;
+	private static final long MAX_NUMBER_OF_USERS_FOLLOWED = 199;
+	private static final long MAX_NUMBER_OF_USERS_UNFOLLOWED = 399;
 	public FollowersHandler m_FollowersHandler;
 	public Account m_Account;
 
@@ -43,20 +45,87 @@ public class Hasvestor {
 	public static void main(String[] args) {
 
 		
-		System.out
-				.println("This is a console app for harvesting twitter followers...");
+		System.out.println("This is a console app for harvesting twitter followers...");
 		
 		//********************************************
 		//1st step: harvest the data from twitter API.
 		//********************************************
 		//updateUserFollowersFromTwitter(USUARIOACOPIAR); //uncomment this method for obtaining a refresh over the users data.
-		//updateUserFollowerInformationInDatabase(MAINUSER); //<--//TODO: aun resta probar que funcione el update en la base de datos; lo dejamos para el final porque lo importante es tener los IDs y no la info de los usuarios en si mismos.
-		
-
-		
+		//updateUserFollowerInformationInDatabase(MAINUSER); //<--//TODO: aun resta probar que funcione el update en la base de datos; lo dejamos para el final porque lo importante es tener los IDs y no la info de los usuarios en si mismos.	
 		//updateUsersThatAlreadyFollowsBack(MAINUSER); //uncomment this, before you start a session of new bulk followings.
 
-		//TODO: Realizar el seguimiento sistematico y controlado de todos los seguidores del usuario objetivo.
+		//TODO: averiguar de que es ese error de "not enough parameters passed to query y arreglarlo".
+		//automaticFollowingOfMainUser(USUARIOACOPIAR, MAX_NUMBER_OF_USERS_FOLLOWED); // follow the users that follows the parametrized usuarioCopiar, follows the amount of users passed as parameter.
+			
+		//Systematically unfollow the users that were followed but that didn't followed back; WATCH IT: this has to be done at least with a day of delay from the following for being effective.
+		systematicallyUnfollowNonFollowersThatWereFollowed(MAINUSER);
+
+	}
+
+
+	private static void systematicallyUnfollowNonFollowersThatWereFollowed(String mainuser) {
+		//obtain the updated list of users that follows you, update the database, so afterward you could review all the users in the collection.
+		updateUserFollowersFromTwitter(mainuser); 
+		
+		//update ALL the twitter ids that follows you back in all the OTHER users (main users), so you don't touch the wrong accounts (this means: twitter_dont_follow_this = true
+		updateUsersThatAlreadyFollowsBack(mainuser); //THis is based on the current followers.
+		
+		//Variables and accounts
+		System.out.println("Start the sistematic un-following.");
+		
+		// here we query the followers for the given user in the database.
+		JongoDAO jongoDAO = new JongoDAO();
+		jongoDAO.openConnection();
+		
+	    Random randomGenerator = new Random();
+	    
+	    long unfollowerUsers = 0;
+	    
+	    //unfollow the users that didn't follow you back and that has the flag "unfollowed" in null.
+		org.jongo.MongoCursor<Document> followers = jongoDAO.getUsersThatDontFollowBack();
+		
+		Account cuenta = new Account();
+		Document follower = null;
+		User datosFollower = null;
+		
+		while((followers.hasNext()) && (unfollowerUsers <= MAX_NUMBER_OF_USERS_UNFOLLOWED)){
+			
+			follower = (Document) followers.next();
+
+			//unfollow the user in twitter and register it in the database.
+			try { 	
+				
+				try{				
+					//unfollows the id, from the connected account
+					datosFollower = cuenta.unfollow(follower.getLong("twitter_id"));
+				} catch (Exception e){
+					datosFollower = cuenta.unfollow(new Long(follower.getDouble("twitter_id").longValue()));
+				}
+				
+				//update all the recently followed users as "unfollowed" equals to today datetime in the Database.
+				if (datosFollower!=null) jongoDAO.updateUnfollowedFlag(datosFollower);
+				
+				unfollowerUsers++;
+				
+				//We set a Random wait in order to disguise the process to the twitter's policies watcher process.
+				TimeUnit.SECONDS.sleep(randomGenerator.nextInt(DELAY_FOR_TWITTER_API));
+
+			} catch (InterruptedException e) {
+				System.out.println("Error following the user: (from Java Random number generator) " + follower.getLong("twitter_id").longValue());
+				e.printStackTrace();
+			} catch (Exception e){
+				System.out.println("Error following the user: (from Java) " + follower.getLong("twitter_id").longValue());
+				e.printStackTrace();
+			}
+				
+			
+		}
+				
+		jongoDAO.closeConnections();
+	}
+
+
+	private static void automaticFollowingOfMainUser(String usuarioCopiar, long maxNumberUsersFollowed ) {
 		//1st. Get ALL the users of your target user to follow that doesn't has a flag of like: "do not follow this".
 		
 		//Variables and accounts
@@ -74,14 +143,14 @@ public class Hasvestor {
 	    Random randomGenerator = new Random();
 	    long followerUsers = 0;
 	    
-		org.jongo.MongoCursor<Document> followersCandidates = jongoDAO.getFollowersCandidates(USUARIOACOPIAR);
+		org.jongo.MongoCursor<Document> followersCandidates = jongoDAO.getFollowersCandidates(usuarioCopiar);
 		
 		//3rd. Get the N users from the target user account that do not have a flag of "do not follow this"; N is the maximum expected number of following by day for your account according to Twitter policies.
 		Document userCandidate = null;
 		
 		User datosFollower = null;
 		
-		while((followersCandidates.hasNext()) && (followerUsers <= MAX_NUMBER_OF_USERS_FOLLOWED)){
+		while((followersCandidates.hasNext()) && (followerUsers <= maxNumberUsersFollowed)){
 			
 			userCandidate =  followersCandidates.next();
 			try {
@@ -120,14 +189,32 @@ public class Hasvestor {
 		}
 	
 		jongoDAO.closeConnections();
-		
-		//TODO: Realizar el "unfollow" sistematico y controlado de todos los seguidos que no nos devolvieron el seguimiento.	
-
 	}
 
 
 	/**
 	 * Allows you, to update the others users in the database as followers of the current user, comparing his actual followers with the followers of the other users: if they are the same, they are flagged for not following them back by accident.
+	 * NOTE: this updates a specific main_users followers.
+	 * @param mainuser
+	 */
+	private static void updateUsersThatAlreadyFollowsBack(String mainuser, String targetUser) {
+		//1st. Get all the followers of the current user. 
+		JongoDAO jongoDao = new JongoDAO();
+		
+		jongoDao.openConnection();
+		
+		org.jongo.MongoCursor<Document> seguidores =  jongoDao.getUserFollowers(mainuser);
+		
+		//2nd. update all users in the collection that has the same "twitter_id" with the "do not follow this" to true.
+		for(Document seguidor: seguidores){
+			jongoDao.updateFollowerStatus(targetUser, seguidor, true);
+		}
+		
+		jongoDao.closeConnections();
+	}
+	
+	/**
+	 * Allows you, to update ALL the others users in the database as followers of the current user; comparing his actual followers with the followers of the other users: if they are the same, they are flagged for not following them back by accident.
 	 * @param mainuser
 	 */
 	private static void updateUsersThatAlreadyFollowsBack(String mainuser) {
@@ -138,9 +225,9 @@ public class Hasvestor {
 		
 		org.jongo.MongoCursor<Document> seguidores =  jongoDao.getUserFollowers(mainuser);
 		
-		//2nd. update all users in the collection that has the same "twitter_id" with the "do not follow this" to true.
+		//2nd. update all users in the collection that has the same "twitter_id" with the "do not follow this" to true (to prevent further following) and twitter_is_follower to current datetime.
 		for(Document seguidor: seguidores){
-			jongoDao.updateFollowerStatus(USUARIOACOPIAR, seguidor, true);
+			jongoDao.updateFollowerStatus(seguidor, true);
 		}
 		
 		jongoDao.closeConnections();
@@ -263,6 +350,7 @@ public class Hasvestor {
 		for (Long id : currentfollowersaccounts) {
 			try {
 				
+				//TODO: Esto hay que cambiarlo por una sentencia update de Jongo o un insert; ver la forma de mejorarlo.
 				//if the collection exists, we do not insert anything
 				if (usuarioseguido_collection!=null){
 					previouslystored = usuarioseguido_collection.find(eq(COL_FIELD_TWITTER_ID, id)).first();

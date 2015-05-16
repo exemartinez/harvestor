@@ -65,6 +65,27 @@ public class JongoDAO {
 	}
 
 	/**
+	 * updates the field twitter_dont_follow_this and twitter_is_follower, for all the main_users (that is for all the users followers).
+	 * This makes the id (seguidor) for all the mainusers in the collection: a) unfollowable b) maked as a current follower.
+	 * 
+	 * @param seguidor
+	 * @param b
+	 */
+	public void updateFollowerStatus(Document seguidor,
+			boolean b) {
+		
+		Jongo jongo = new Jongo(dataBase);
+		MongoCollection usuariosseguidores = jongo.getCollection(COL_USUARIOS_SEGUIDORES_USUARIO);
+		
+		DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+		Calendar cal = Calendar.getInstance();
+		
+		usuariosseguidores.update("{twitter_id: " + seguidor.getLong("twitter_id").longValue() + "}").multi().with("{$set: {twitter_dont_follow_this: true, twitter_is_follower_date: " + dateFormat.format(cal.getTime()) + "}}");
+		
+		
+	}
+	
+	/**
 	 * Creates a connection, if is already open, closes it.
 	 */
 	public void openConnection() {
@@ -115,4 +136,42 @@ public class JongoDAO {
 		usuariosseguidores.update("{twitter_id: " + datosFollower.getId() + "}").multi().with("{$set: {twitter_dont_follow_this: true, twitter_username: \"" + datosFollower.getName() + "\", twitter_description: \"" + datosFollower.getDescription() + "\", twitter_screenname: \"" + datosFollower.getScreenName() + "\", twitter_location: \"" + datosFollower.getLocation() + "\", twitter_followers_count: " + datosFollower.getFollowersCount() + ", twitter_friends_count: " + datosFollower.getFriendsCount() + ", twitter_favs_count: " + datosFollower.getFavouritesCount() + ", twitter_status_count: " + datosFollower.getStatusesCount() + ", Recently_followed_users: " + dateFormat.format(cal.getTime()) + " }}");
 		
 	}
+
+	/**
+	 * Returns all the users that you've followed, but that do not follow you back (and that you didn't unfollowed, previously)
+	 * 
+	 * If all this happened, then, probably, the user didn't followed you back after you followed him.
+	 * @return
+	 */
+	public MongoCursor<Document> getUsersThatDontFollowBack() {
+
+		Jongo jongo = new Jongo(dataBase);
+		MongoCollection usuariosseguidores = jongo.getCollection(COL_USUARIOS_SEGUIDORES_USUARIO);
+		
+		MongoCursor<Document> found = usuariosseguidores.find("{twitter_unfollowed_date: {$eq: null}, twitter_dont_follow_this: true, twitter_is_follower_date: {$eq: null}}").as(Document.class);
+		
+		if (found.hasNext())
+			return found;
+		else
+			return null;
+	}
+
+	/**
+	 * Updates the flag of unfollowed user to current date of unfollowing; so we leave a record of the user following us or not and when.
+	 * @param id
+	 */
+	public void updateUnfollowedFlag(User datosFollower) {
+		
+		Jongo jongo = new Jongo(dataBase);
+		MongoCollection usuariosseguidores = jongo.getCollection(COL_USUARIOS_SEGUIDORES_USUARIO);
+		
+		DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+		Calendar cal = Calendar.getInstance();
+		
+		// we take advantage that the unfollowing procedure returns the user data.
+		usuariosseguidores.update("{twitter_id: " + datosFollower.getId() + "}").multi().with("{$set: {twitter_dont_follow_this: true, twitter_username: \"" + datosFollower.getName() + "\", twitter_description: \"" + datosFollower.getDescription() + "\", twitter_screenname: \"" + datosFollower.getScreenName() + "\", twitter_location: \"" + datosFollower.getLocation() + "\", twitter_followers_count: " + datosFollower.getFollowersCount() + ", twitter_friends_count: " + datosFollower.getFriendsCount() + ", twitter_favs_count: " + datosFollower.getFavouritesCount() + ", twitter_status_count: " + datosFollower.getStatusesCount() + ", twitter_unfollowed_date: " + dateFormat.format(cal.getTime()) + " }}");
+		
+	}
+
+
 }
