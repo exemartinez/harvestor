@@ -2,6 +2,7 @@ package com.ar.twitter.harvester;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 
 import org.bson.Document;
@@ -173,5 +174,6 @@ public class JongoDAO {
 		
 	}
 
+	
 
 }
