@@ -75,19 +75,7 @@ public class Hasvestor {
 		System.out.println("...process finished.");
 		
 		System.exit(0);
-		//********************************************
-		//1st step: harvest the data from twitter API.
-		//********************************************
-		//fh.updateUserFollowersFromTwitter(fh.USUARIOACOPIAR); //uncomment this method for obtaining a refresh over the users data.
-		//fh.updateUserFollowerInformationInDatabase(fh.MAINUSER); //<--//TODO: aun resta probar que funcione el update en la base de datos; lo dejamos para el final porque lo importante es tener los IDs y no la info de los usuarios en si mismos.	
-		//fh.updateUsersThatAlreadyFollowsBack(fh.MAINUSER); //uncomment this, before you start a session of new bulk followings.
-
-		//TODO: averiguar de que es ese error de "not enough parameters passed to query y arreglarlo".
-		//fh.automaticFollowingOfMainUser(fh.USUARIOACOPIAR, fh.MAX_NUMBER_OF_USERS_FOLLOWED); // follow the users that follows the parametrized usuarioCopiar, follows the amount of users passed as parameter.
-
-		
-		//TODO: hay que armar el gestionador de ejecucion simple o de linea de comandos.
-		
+	
 		//following from the commandline
 		//unfollowing from the commandline
 		
