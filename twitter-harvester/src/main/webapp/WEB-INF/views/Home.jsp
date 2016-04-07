@@ -9,6 +9,6 @@
 <title>Login page for this service - Twitter analytics</title>
 </head>
 <body>
-	It works? <a href="<c:url value="/login" />">login</a>
+	It works? <a href="<c:url value="/home/login" />">login</a>
 </body>
 </html>
