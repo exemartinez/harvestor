@@ -13,18 +13,6 @@
 	<listener>
 		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
 	</listener>
-
-	<!-- Protection against cross site reference attacks -->
-	<!-- filter>
-		<filter-name>csrfFilter</filter-name>
-		<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
-		<async-supported>true</async-supported>
-	</filter-->
-	
-	<!-- filter-mapping>
-		<filter-name>csrfFilter</filter-name>
-		<url-pattern>/*</url-pattern>
-	</filter-mapping-->
     
 	<!-- Processes application requests -->
 	<servlet>
@@ -35,7 +23,7 @@
 			<param-value>/WEB-INF/spring-config/appServlet/servlet-context.xml</param-value>
 		</init-param>
 		<load-on-startup>1</load-on-startup>
-		<async-supported>true</async-supported>
+		<!-- async-supported>true</async-supported-->
 	</servlet>
 		
 	<servlet-mapping>

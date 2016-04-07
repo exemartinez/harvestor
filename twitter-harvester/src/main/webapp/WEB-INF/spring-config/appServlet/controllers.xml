@@ -7,9 +7,10 @@
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
 		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd">
 
-	<!-- Maps '/' requests to the 'home' view -->
+	<!-- Maps '/' requests to the 'Home' view -->
 	<mvc:view-controller path="/" view-name="Home"/>
 	
-	<context:component-scan base-package="com.ar.twitter.harvester" />
+
+	<context:component-scan base-package="com.ar.twitter.harvester.controllers" />
 	 
 </beans>
