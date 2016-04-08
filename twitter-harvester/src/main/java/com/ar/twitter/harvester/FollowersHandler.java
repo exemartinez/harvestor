@@ -110,8 +110,6 @@ public class FollowersHandler {
 		
 		//Variables and accounts
 		Account cuenta = new Account();
-		FollowersHandler fHandler = new FollowersHandler();
-		ArrayList<Document> idcandidates = null;
 
 		// obtaining all users that follows the common user passed as argument.
 		
