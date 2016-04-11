@@ -21,9 +21,8 @@ public class Hasvestor {
 		System.out.println("This is a console app for harvesting twitter followers...");
 		
 		//TODO: falta refactory de mongoDB
-		//TODO: falta refactory de rate limits en todos los procesos.
+		//TODO: falta refactory de rate limits en todos los procesos. (ver si esto lo podemos hacer con Spring AOP)
 		
-		//TODO: ver como hacemos para que conecte contra un mongodb, lo ponemos bundleado?
 		if ((args.length== 2) && (args[0].trim().equals("updateFromTwitter")) && (args[1]!=null)){
 			
 			fh.updateUserFollowersFromTwitter(args[1].trim()); // Obtains a refresh over the users data.
@@ -41,7 +40,7 @@ public class Hasvestor {
 			Long amountOfIterations = Long.parseLong(args[2]);
 			
 			//TODO: averiguar de que es ese error de "not enough parameters passed to query y arreglarlo".
-			fh.automaticFollowingOfMainUser(args[1], amountOfIterations); // follow the users that follows the parametrized usuarioCopiar, follows the amount of users passed as parameter.
+			fh.automaticFollowingOfUsersFollowers(args[1], amountOfIterations); // follow the users that follows the parametrized usuarioCopiar, follows the amount of users passed as parameter.
 			
 		} else if ((args.length>= 3) && (args[0].trim().equals("unfollowNonFollowersOf")) && (args[1]!=null) && (args[2]!=null)){
 			
@@ -61,16 +60,6 @@ public class Hasvestor {
 		System.out.println("...process finished.");
 		
 		System.exit(0);
-	
-		//following from the commandline
-		//unfollowing from the commandline
-		
-		//TODO: Armar interfaz web
-		//TODO: transformar en un web service
-		//TODO: Generar los codigos de unfollow inteligente (con ratios y evaliacion de seguidores seguidos por cada uno)
-		//TODO: generar seguimiento distribuido por las proximas 24hs
-		//TODO: generar segumiento distribuido por las proximas 24hs.
-		
 		
 
 	}

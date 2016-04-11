@@ -104,12 +104,16 @@ public class FollowersHandler {
 		jongoDAO.closeConnections();
 	}
 
-
-	public void automaticFollowingOfMainUser(String usuarioCopiar, long maxNumberUsersFollowed ) {
+	/**
+	 * 
+	 * @param usuarioCopiar The user name, which follower we'll try to "copy" by following them first.
+	 * @param maxNumberUsersFollowed The limit of users to automatically follow in order to avoid Twitter limits.
+	 */
+	public void automaticFollowingOfUsersFollowers(String usuarioCopiar, long maxNumberUsersFollowed ) {
 		//1st. Get ALL the users of your target user to follow that doesn't has a flag of like: "do not follow this".
 		
 		//Variables and accounts
-		Account cuenta = new Account();
+		Account cuenta = new Account(); //This is the AUTHENTICATED twitter user, and is the one doing the "followings".
 
 		// obtaining all users that follows the common user passed as argument.
 		
@@ -118,7 +122,7 @@ public class FollowersHandler {
 		// here we query the followers for the given user in the database.
 		JongoDAO jongoDAO = new JongoDAO();
 		jongoDAO.openConnection();
-	    Random randomGenerator = new Random();
+	    Random randomGenerator = new Random(); //we'll need this to randomize the automatic "following".
 	    long followerUsers = 0;
 	    
 		org.jongo.MongoCursor<Document> followersCandidates = jongoDAO.getFollowersCandidates(usuarioCopiar);
@@ -150,7 +154,7 @@ public class FollowersHandler {
 					System.out.println("Can't follow the user: " + userCandidate.getLong("twitter_id").longValue());
 				}
 				
-				//We set a Random wait in order to disguise the twitter policies.
+				//We set a Random wait in order to disguise the twitter policies and simulate a current "human".
 				TimeUnit.SECONDS.sleep(randomGenerator.nextInt(5));
 				
 			} catch (TwitterException e) {
