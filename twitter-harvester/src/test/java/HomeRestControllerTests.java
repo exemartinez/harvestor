@@ -33,7 +33,7 @@ import org.springframework.web.context.WebApplicationContext;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 //@SpringApplicationConfiguration(classes = Application.class)
-@ContextConfiguration(locations={"classpath:WEB-INF/web.xml"})
+@ContextConfiguration(locations={"classpath:WEB-INF/spring-config/root-context.xml"})
 @WebAppConfiguration
 public class HomeRestControllerTests {
 
@@ -49,6 +49,7 @@ public class HomeRestControllerTests {
 	@Autowired
 	private WebApplicationContext webApplicationContext;
 
+	/*
 	@Autowired
 	void setConverters(HttpMessageConverter<?>[] converters) {
 
@@ -56,6 +57,7 @@ public class HomeRestControllerTests {
 				.filter(hmc -> hmc instanceof MappingJackson2HttpMessageConverter).findAny().get();
 
 	}
+	*/
 	
 	/**
 	 * Set ups the entire mocking webapp context.
