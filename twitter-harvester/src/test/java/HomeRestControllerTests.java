@@ -2,23 +2,19 @@
 import static org.junit.Assert.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
-
-import java.nio.charset.Charset;
-import java.util.Arrays;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+
+import com.ar.twitter.harvester.controllers.HomeRestController;
 
 
 /**
@@ -31,43 +27,28 @@ import org.springframework.web.context.WebApplicationContext;
  * @author HerMartinez
  *
  */
+
 @RunWith(SpringJUnit4ClassRunner.class)
-//@SpringApplicationConfiguration(classes = Application.class)
-@ContextConfiguration(locations={"classpath:WEB-INF/spring-config/root-context.xml"})
 @WebAppConfiguration
+@ContextConfiguration("classpath:WEB-INF/spring-config/root-context.xml")
 public class HomeRestControllerTests {
 
-	private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),
-			MediaType.APPLICATION_JSON.getSubtype(), Charset.forName("utf8"));
+    @Autowired
+    private WebApplicationContext wac;
 
-	private MockMvc mockMvc;
-
-	private String userName = "bdussault";
-
-	private HttpMessageConverter<?> mappingJackson2HttpMessageConverter;
-
-	@Autowired
-	private WebApplicationContext webApplicationContext;
-
-	/*
-	@Autowired
-	void setConverters(HttpMessageConverter<?>[] converters) {
-
-		this.mappingJackson2HttpMessageConverter = Arrays.asList(converters).stream()
-				.filter(hmc -> hmc instanceof MappingJackson2HttpMessageConverter).findAny().get();
-
-	}
-	*/
+    private MockMvc mockMvc;
 	
 	/**
 	 * Set ups the entire mocking webapp context.
 	 * @throws Exception
 	 */
-	@Before
-	public void setup() throws Exception {
-		this.mockMvc = webAppContextSetup(webApplicationContext).build();
-
-	}
+    @Before
+    public void setup() {
+    	
+        //this.mockMvc = MockMvcBuilders.webAppContextSetup(this.wac).build();
+    	//System.out.println("Name: " + wac.getResource("WEB-INF/spring-config/root-context.xml"));
+        this.mockMvc = MockMvcBuilders.standaloneSetup(new HomeRestController()).build();
+    }
 
 	/**
 	 * Test method for
@@ -78,7 +59,7 @@ public class HomeRestControllerTests {
 	public void testUpdateFromTwitter() {
         try {
         	
-			mockMvc.perform(get("/updateFromTwitter/hernanemartinez")).andExpect(status().isOk());
+			mockMvc.perform(get("/twitter-harvester/home/updateFromTwitter/hernanemartinez").contextPath("/twitter-harvester").servletPath("/home")).andExpect(status().isOk());
 			
 		} catch (Exception e) {
 			fail("Throws an exception.");
@@ -95,7 +76,7 @@ public class HomeRestControllerTests {
 	public void testUpdateFollowersInfoString() {
         try {
         	
-			mockMvc.perform(get("/updateFollowersInfo/hernanemartinez")).andExpect(status().isOk());
+			mockMvc.perform(get("/home/updateFollowersInfo/hernanemartinez")).andExpect(status().isOk());
 			
 		} catch (Exception e) {
 			fail("Throws an exception.");
@@ -112,7 +93,7 @@ public class HomeRestControllerTests {
 	public void testUpdateFollowersInfoStringLongString() {
         try {
         	
-			mockMvc.perform(get("/followUsersOf/florenciaypunto/maxNumberOfUsersToFollow/50/updateFollowersFirst")).andExpect(status().isOk());
+			mockMvc.perform(get("/home/followUsersOf/florenciaypunto/maxNumberOfUsersToFollow/50/updateFollowersFirst")).andExpect(status().isOk());
 			
 		} catch (Exception e) {
 			fail("Throws an exception.");
@@ -129,7 +110,7 @@ public class HomeRestControllerTests {
 	public void testUnfollowNonFollowersOf() {
         try {
         	
-			mockMvc.perform(get("/unfollowNonFollowersOf/florenciaypunto/maxNumberOfUsersToFollow/50/updateFollowersFirst")).andExpect(status().isOk());
+			mockMvc.perform(get("/home/unfollowNonFollowersOf/florenciaypunto/maxNumberOfUsersToFollow/50/updateFollowersFirst")).andExpect(status().isOk());
 			
 		} catch (Exception e) {
 			fail("Throws an exception.");

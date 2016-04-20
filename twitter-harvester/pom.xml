@@ -82,6 +82,11 @@
 			<artifactId>spring-boot</artifactId>
 			<version>1.3.3.RELEASE</version>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-autoconfigure</artifactId>
+			<version>1.0.0.RELEASE</version>
+		</dependency>
 
 
 		<!-- AspectJ -->
@@ -296,11 +301,16 @@
 		</plugins>
 
 		<!-- Test resources -->
-		<testResources>
+		<!-- testResources>
+			<testResource>
+				<directory>src/test/resources</directory>
+			</testResource>
+		</testResources-->
+		<!-- testResources>
 			<testResource>
 				<directory>src/main/webapp</directory>
 			</testResource>
-		</testResources>
+		</testResources-->
 
 	</build>
 
